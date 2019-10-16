@@ -6,7 +6,7 @@ namespace WhatsInAWord.Console {
   internal class Program {
     private static void Main(string[] args) {
       var stopwatch = Stopwatch.StartNew();
-      foreach (var combination in new BruteForceWordFinder(new Settings(), str => { } /*System.Console.WriteLine*/)
+      foreach (var combination in new BruteForceWordFinder(new Settings()/*, System.Console.WriteLine*/)
         .FindWordCombinations(
           File.ReadAllLines("input.txt"))) {
         System.Console.WriteLine(combination);
@@ -18,6 +18,6 @@ namespace WhatsInAWord.Console {
   }
 
   internal class Settings : IWordFinderSettings {
-    public int WordLengthToMatch => 5;
+    public int WordLengthToMatch => 6;
   }
 }

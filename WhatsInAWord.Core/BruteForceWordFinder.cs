@@ -7,9 +7,9 @@ namespace WhatsInAWord.Core {
     private readonly Action<string> _logger;
     private readonly IWordFinderSettings _settings;
 
-    public BruteForceWordFinder(IWordFinderSettings settings, Action<string> logger) {
+    public BruteForceWordFinder(IWordFinderSettings settings, Action<string> logger=null) {
       _settings = settings;
-      _logger = logger;
+      _logger = logger??(_ => { });
     }
 
     public IEnumerable<string> FindWordCombinations(IEnumerable<string> words) {
