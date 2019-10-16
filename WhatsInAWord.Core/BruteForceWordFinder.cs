@@ -4,8 +4,8 @@ using System.Linq;
 
 namespace WhatsInAWord.Core {
   public class BruteForceWordFinder : IWordFinder {
-    private readonly IWordFinderSettings _settings;
     private readonly Action<string> _logger;
+    private readonly IWordFinderSettings _settings;
 
     public BruteForceWordFinder(IWordFinderSettings settings, Action<string> logger) {
       _settings = settings;
@@ -13,80 +13,93 @@ namespace WhatsInAWord.Core {
     }
 
     public IEnumerable<string> FindWordCombinations(IEnumerable<string> words) {
-      var wordsByLength = words.GroupBy(w => w.Length).ToList();
+      var wordsByLength = words.Distinct().GroupBy(w => w.Length).ToList();
 
       var result = MatchWords(
         wordsByLength.SingleOrDefault(x => x.Key == _settings.WordLengthToMatch)?.ToArray() ?? Array.Empty<string>(),
         wordsByLength.Where(g => g.Key < _settings.WordLengthToMatch).ToArray());
 
-      return result.Select(x=>x.ToString());
+      return result.Select(x => x.ToString()).Distinct();
     }
 
     private IEnumerable<WordMatch> MatchWords(string[] words, IGrouping<int, string>[] parts) {
-      return words.SelectMany(word => {
-        var results = new List<WordMatch>();
-        CombineParts(results, new WordMatch(word, _logger), parts, 0);
-        return results;
-      });
+      return words.SelectMany(word => CombineParts(new WordMatch(word, _logger), parts));
     }
 
-    private void CombineParts(List<WordMatch> acc, WordMatch wordMatch, IGrouping<int, string>[] parts, int level) {
-      foreach (var part in parts.SelectMany(x=>x)) {
-        _logger($"LEVEL {level}");
-        if(!wordMatch.IsComplete && wordMatch.Match(part))
-          if (wordMatch.IsComplete)
-            acc.Add(wordMatch);
-          else
-            CombineParts(acc, wordMatch, parts
-              .Where(g => g.Key <= wordMatch.RemainingCharCount)
-              .ExcludePart(part)
-              .ToArray(), level++);
+    private IEnumerable<WordMatch> CombineParts(WordMatch wordMatch, IGrouping<int, string>[] parts) {
+      foreach (var part in parts.SelectMany(x => x)) {
+        if (!wordMatch.IsMatch(part)) continue;
+
+        var clone = (WordMatch)wordMatch.Clone();
+        clone.Match(part);
+        if (clone.IsComplete)
+          yield return clone;
+
+        foreach (var match in CombineParts(clone, parts
+            .Where(g => g.Key <= clone.RemainingCharCount)
+            .ExcludePart(part)
+            .ToArray()))
+          yield return match;
+      }
+    }
+
+    private class WordMatch : ICloneable {
+      private readonly Action<string> _logger;
+      private List<string> _parts;
+      private string _remainder;
+
+      public WordMatch(string word, Action<string> logger) {
+        Word = word;
+        _remainder = word;
+        _logger = logger;
+        _parts = new List<string>();
+      }
+
+      public string Word { get; }
+
+      public IReadOnlyList<string> Parts => _parts;
+
+      public bool IsComplete => string.IsNullOrEmpty(_remainder);
+
+      public int RemainingCharCount => _remainder.Length;
+
+      public object Clone() {
+        var partsClone = new string[_parts.Count];
+        _parts.CopyTo(partsClone);
+        var clone = new WordMatch(Word, _logger) {
+          _remainder = _remainder,
+          _parts = partsClone.ToList()
+        };
+        _logger($"Cloning [{GetHashCode()}] to [{clone.GetHashCode()}]");
+        return clone;
+      }
+
+      public bool IsMatch(string part) {
+        //TODO: dynamic alignment according to Word.Length
+        _logger($"{GetHashCode()}: {Word} => matching [{part,-6}] with [{_remainder,-6}]");
+        return _remainder.StartsWith(part);
+      }
+
+      public void Match(string part) {
+        _parts.Add(part);
+        _remainder = _remainder.Substring(part.Length, RemainingCharCount - part.Length);
+      }
+
+      public override string ToString() {
+        return $"{string.Join("+", Parts)}={Word}";
       }
     }
   }
 
   internal static class Extensions {
-    public static IEnumerable<IGrouping<int, string>> ExcludePart(this IEnumerable<IGrouping<int, string>> original, string part) {
+    public static IEnumerable<IGrouping<int, string>> ExcludePart(this IEnumerable<IGrouping<int, string>> original,
+      string part) {
       return original
         .SelectMany(g => g)
-        .Where(x=>x!=part)
+        .Where(x => x != part)
+        .Concat(original.SelectMany(g => g).Where(x => x == part)
+          .Skip(1)) //only remove 1 occurrence of part (not all of them)
         .GroupBy(x => x.Length);
     }
-  }
-
-  internal class WordMatch {
-    private readonly List<string> _parts;
-    private string _remainder;
-    private readonly Action<string> _logger;
-
-    public WordMatch(string word, Action<string> logger) {
-      Word = word;
-      _remainder = word;
-      _logger = logger;
-      _parts = new List<string>();
-    }
-
-    public string Word { get; }
-
-    public IReadOnlyList<string> Parts => _parts;
-
-    public bool Match(string part) {
-      _logger($"{GetHashCode()}: {Word} => matching [{part,-6}] with [{_remainder,-6}]");//TODO: dynamic alignment according to Word.Length
-      if (_remainder.StartsWith(part)) {
-        _logger("MATCH!");
-        _parts.Add(part);
-        _remainder = _remainder.Substring(part.Length, RemainingCharCount-part.Length);
-        return true;
-      }
-      _logger("no");
-
-      return false;
-    }
-
-    public bool IsComplete => string.IsNullOrEmpty(_remainder);
-
-    public int RemainingCharCount => _remainder.Length;
-
-    public override string ToString() => $"{string.Join("+", Parts)}={Word}";
   }
 }

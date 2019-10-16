@@ -27,9 +27,15 @@ namespace WhatsInAWord.Test {
     }
 
     [Fact]
-    public void UseDoubleLetters() {
+    public void UseDoubleLettersAsStart() {
       ForWords("succes", "uc", "s", "ce", "s")
         .Expect("s+uc+ce+s=succes");
+    }
+
+    [Fact]
+    public void UseDoubleLettersInTheMiddle() {
+      ForWords("ucssce", "uc", "s", "ce", "s")
+        .Expect("uc+s+s+ce=ucssce");
     }
 
     [Fact]
