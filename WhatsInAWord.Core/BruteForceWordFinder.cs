@@ -36,9 +36,9 @@ namespace WhatsInAWord.Core {
           yield return clone;
 
         foreach (var match in CombineParts(clone, parts
-            .Where(g => g.Key <= clone.RemainingCharCount)
-            .ExcludePart(part)
-            .ToArray()))
+          .Where(g => g.Key <= clone.RemainingCharCount)
+          .ExcludePart(part)
+          .ToArray()))
           yield return match;
       }
     }
@@ -88,18 +88,6 @@ namespace WhatsInAWord.Core {
       public override string ToString() {
         return $"{string.Join("+", Parts)}={Word}";
       }
-    }
-  }
-
-  internal static class Extensions {
-    public static IEnumerable<IGrouping<int, string>> ExcludePart(this IEnumerable<IGrouping<int, string>> original,
-      string part) {
-      return original
-        .SelectMany(g => g)
-        .Where(x => x != part)
-        .Concat(original.SelectMany(g => g).Where(x => x == part)
-          .Skip(1)) //only remove 1 occurrence of part (not all of them)
-        .GroupBy(x => x.Length);
     }
   }
 }

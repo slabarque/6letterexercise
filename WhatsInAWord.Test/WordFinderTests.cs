@@ -1,62 +1,11 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using WhatsInAWord.Core;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace WhatsInAWord.Test {
   public abstract class WordFinderTests {
-    [Fact]
-    public void CanFindCombinationOf2() {
-      ForWords("foobar", "foo", "bar")
-        .Expect("foo+bar=foobar");
-    }
-
-    [Fact]
-    public void CanFindCombinationOf3() {
-      ForWords("foobar", "o", "fo", "bar")
-        .Expect("fo+o+bar=foobar");
-    }
-
-    [Fact]
-    public void DisallowDoubleUseOfLetter() {
-      ForWords("succes", "uc", "ce", "s")
-        .ExpectNothing();
-    }
-
-    [Fact]
-    public void UseDoubleLettersAsStart() {
-      ForWords("succes", "uc", "s", "ce", "s")
-        .Expect("s+uc+ce+s=succes");
-    }
-
-    [Fact]
-    public void UseDoubleLettersInTheMiddle() {
-      ForWords("ucssce", "uc", "s", "ce", "s")
-        .Expect("uc+s+s+ce=ucssce");
-    }
-
-    [Fact]
-    public void FindMultipleWords() {
-      ForWords("rifraf", "rif", "raf", "rafrif")
-        .Expect("rif+raf=rifraf", "raf+rif=rafrif");
-    }
-
-    [Fact]
-    public void FindMultipleCombinationsFor1Word() {
-      ForWords("soccer", "soc", "ce", "r", "so", "cc", "er")
-        .Expect("soc+ce+r=soccer", "so+cc+er=soccer");
-    }
-
-    [Fact]
-    public void FindPermutationsOfChars() {
-      ForWords("t", "actors", "c", "r", "castor", "a", "s", "costar", "o")
-        .Expect("a+c+t+o+r+s=actors", "c+a+s+t+o+r=castor", "c+o+s+t+a+r=costar");
-    }
-
-    protected WordFinderTestSetup ForWords(params string[] words) {
+    protected internal WordFinderTestSetup ForWords(params string[] words) {
       return new WordFinderTestSetup(CreateWordFinder(), words);
     }
 
@@ -79,25 +28,53 @@ namespace WhatsInAWord.Test {
     }
 
     protected abstract IWordFinder CreateWordFinder();
-  }
 
-  public class BruteForceWordFinderTests : WordFinderTests
-  {
-    private readonly ITestOutputHelper _output;
-
-    public BruteForceWordFinderTests(ITestOutputHelper output ) {
-      _output = output;
+    [Fact]
+    public void CanFindCombinationOf2() {
+      ForWords("foobar", "foo", "bar")
+        .Expect("foo+bar=foobar");
     }
-    protected override IWordFinder CreateWordFinder() {
-      return new BruteForceWordFinder(TestSettings.Default, _output.WriteLine);
+
+    [Fact]
+    public void CanFindCombinationOf3() {
+      ForWords("foobar", "o", "fo", "bar")
+        .Expect("fo+o+bar=foobar");
     }
-  }
 
-  public class TestSettings:IWordFinderSettings {
-    public int WordLengthToMatch { get; set; }
+    [Fact]
+    public void DisallowDoubleUseOfLetter() {
+      ForWords("succes", "uc", "ce", "s")
+        .ExpectNothing();
+    }
 
-    public static TestSettings Default => new TestSettings {
-      WordLengthToMatch = 6
-    };
+    [Fact]
+    public void FindMultipleCombinationsFor1Word() {
+      ForWords("soccer", "soc", "ce", "r", "so", "cc", "er")
+        .Expect("soc+ce+r=soccer", "so+cc+er=soccer");
+    }
+
+    [Fact]
+    public void FindMultipleWords() {
+      ForWords("rifraf", "rif", "raf", "rafrif")
+        .Expect("rif+raf=rifraf", "raf+rif=rafrif");
+    }
+
+    [Fact]
+    public void FindPermutationsOfChars() {
+      ForWords("t", "actors", "c", "r", "castor", "a", "s", "costar", "o")
+        .Expect("a+c+t+o+r+s=actors", "c+a+s+t+o+r=castor", "c+o+s+t+a+r=costar");
+    }
+
+    [Fact]
+    public void UseDoubleLettersAsStart() {
+      ForWords("succes", "uc", "s", "ce", "s")
+        .Expect("s+uc+ce+s=succes");
+    }
+
+    [Fact]
+    public void UseDoubleLettersInTheMiddle() {
+      ForWords("ucssce", "uc", "s", "ce", "s")
+        .Expect("uc+s+s+ce=ucssce");
+    }
   }
 }
